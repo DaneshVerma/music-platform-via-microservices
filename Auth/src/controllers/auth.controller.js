@@ -2,7 +2,7 @@ import userModel from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-
+import { publishMessage } from "../broker/rabbit.js";
 export async function registerUser(req, res) {
   const {
     username,
@@ -29,6 +29,12 @@ export async function registerUser(req, res) {
     expiresIn: "2d",
   });
   res.cookie("token", token);
+  await publishMessage("auth_queue", { 
+    email,
+    username,
+    fullname: { firstname, lastname },
+    password,
+   });
   return res
     .status(201)
     .json({ message: "User registered successfully", user, token });
