@@ -64,6 +64,11 @@ export async function googleCallback(req, res) {
     expiresIn: "2d",
   });
   res.cookie("token", token);
+  await publishMessage("auth_queue", { 
+    email,
+    username,
+    fullname: { firstname, lastname },
+   });
   return res
     .status(200)
     .json({ message: "User registered successfully", user, token });
