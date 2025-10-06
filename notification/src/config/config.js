@@ -8,6 +8,7 @@ const _config = {
     REDIRECT_URI: process.env.REDIRECT_URI,
     EMAIL_USER: process.env.EMAIL_USER,
     REFRESH_TOKEN: process.env.REFRESH_TOKEN,
+    JWT_SECRET: process.env.JWT_SECRET,
     RABBITMQ_URL: process.env.RABBITMQ_URL,
 }
 

@@ -42,3 +42,10 @@ export const regitserValidationRules = [
 
   validationMiddleware,
 ];
+
+export const resetPasswordValidationRules = [
+  body("email").trim().notEmpty().withMessage("Email is required"),
+  body("otp").trim().notEmpty().withMessage("OTP is required"),
+  body("newPassword").trim().notEmpty().withMessage("New Password is required"),
+  validationMiddleware,
+];
