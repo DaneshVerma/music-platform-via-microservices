@@ -43,6 +43,12 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
+  role: {
+    type: String,
+    enum: ["user", "artist"],
+    default: "user",
+  },
+  
 });
 
 const userModel = mongoose.model("user", userSchema);

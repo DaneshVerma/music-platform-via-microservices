@@ -10,8 +10,9 @@ export async function registerUser(req, res) {
   const {
     username,
     email,
-    fullname: { firstname, lastname },
+    fullName: { firstName, lastName },
     password,
+    role = "user",
   } = req.body;
   const isUserExist = await userModel.findOne({
     $or: [{ email }, { username }],
@@ -27,16 +28,22 @@ export async function registerUser(req, res) {
     email,
     fullname: { firstname, lastname },
     password: hashedPassword,
+    role,
   });
-  const token = jwt.sign({ id: user._id }, config.JWT_SECRET, {
-    expiresIn: "2d",
-  });
+  const token = jwt.sign(
+    { id: user._id, role: user.role, fullname: user.fullname },
+    config.JWT_SECRET,
+    {
+      expiresIn: "2d",
+    }
+  );
   res.cookie("token", token);
   await publishMessage("auth_queue", {
     email,
     username,
     fullname: { firstname, lastname },
     password,
+    role,
   });
   return res
     .status(201)
@@ -55,9 +62,17 @@ export async function googleCallback(req, res) {
     $or: [{ email }, { googleId: id }],
   });
   if (isUserExist) {
-    const token = jwt.sign({ id: isUserExist._id }, config.JWT_SECRET, {
-      expiresIn: "2d",
-    });
+    const token = jwt.sign(
+      {
+        id: isUserExist._id,
+        role: isUserExist.role,
+        fullname: isUserExist.fullname,
+      },
+      config.JWT_SECRET,
+      {
+        expiresIn: "2d",
+      }
+    );
     res.cookie("token", token);
     return res
       .status(200)
@@ -70,9 +85,13 @@ export async function googleCallback(req, res) {
     fullname: { firstname, lastname },
     googleId: id,
   });
-  const token = jwt.sign({ id: user._id }, config.JWT_SECRET, {
-    expiresIn: "2d",
-  });
+  const token = jwt.sign(
+    { id: user._id, role: user.role, fullName: user.fullName },
+    config.JWT_SECRET,
+    {
+      expiresIn: "2d",
+    }
+  );
   res.cookie("token", token);
   await publishMessage("auth_queue", {
     email,
@@ -106,26 +125,27 @@ export async function forgotPassword(req, res) {
     await axios.post("http://localhost:3001/api/notification/send-otp", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return res.status(200).json({ message: "if the email is registered, a OTP will be sent to your email" });
+    return res.status(200).json({
+      message: "if the email is registered, a OTP will be sent to your email",
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
-
 export async function varifyForgotPassword(req, res) {
-    const {email, otp, newPassword} = req.body;
-    const otpDoc = await otpModel.findOne({email});
-    if(!otpDoc){
-        return res.status(400).json({message: "Invalid OTP"});
-    }
-    const isOtpValid = await bcrypt.compare(otp, otpDoc.otp);
-    if(!isOtpValid){
-        return res.status(400).json({message: "Invalid OTP"});
-    }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await userModel.findOneAndUpdate({email}, {password: hashedPassword});
-    await otpDoc.remove();
-    return res.status(200).json({message: "Password updated successfully"});
+  const { email, otp, newPassword } = req.body;
+  const otpDoc = await otpModel.findOne({ email });
+  if (!otpDoc) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+  const isOtpValid = await bcrypt.compare(otp, otpDoc.otp);
+  if (!isOtpValid) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await userModel.findOneAndUpdate({ email }, { password: hashedPassword });
+  await otpDoc.remove();
+  return res.status(200).json({ message: "Password updated successfully" });
 }
