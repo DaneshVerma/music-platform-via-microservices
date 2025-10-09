@@ -50,6 +50,27 @@ export async function registerUser(req, res) {
     .json({ message: "User registered successfully", user, token });
 }
 
+export async function loginUser(req, res) {
+  const { email, password } = req.body;
+  const user = await userModel.findOne({ email });
+  if (!user) {
+    return res.status(400).json({ message: "User not found" });
+  }
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(400).json({ message: "Invalid password" });
+  }
+  const token = jwt.sign(
+    { id: user._id, role: user.role, fullname: user.fullname },
+    config.JWT_SECRET,
+    {
+      expiresIn: "2d",
+    }
+  );
+  res.cookie("token", token);
+  return res.status(200).json({ message: "User logged in successfully", user, token });
+ }
+
 export async function googleCallback(req, res) {
   const {
     id,
